@@ -1,4 +1,8 @@
+#include <Wire.h>
+
 #include "Gyro.h"
+#include "Arduino.h"
+const int MPU = 0x68;
 
 void Gyroscope::readRaw(double& accX, double& accY, double& accZ, double& gyroX, double& gyroY, double& gyroZ) {
   Wire.beginTransmission(MPU);
@@ -18,10 +22,25 @@ void Gyroscope::readRaw(double& accX, double& accY, double& accZ, double& gyroX,
   gyroX = (Wire.read() << 8 | Wire.read()) / 131.0;
   gyroY = (Wire.read() << 8 | Wire.read()) / 131.0;
   gyroZ = (Wire.read() << 8 | Wire.read()) / 131.0;
+
+  // Serial.print(accX);
+  // Serial.print(" ");
+  // Serial.print(accY);
+  // Serial.print(" ");
+  // Serial.print(accZ);
+  // Serial.print(" ");
+  
+  // Serial.print(gyroX);
+  // Serial.print(" ");
+  // Serial.print(gyroY);
+  // Serial.print(" ");
+  // Serial.print(gyroZ);
+  // Serial.println(" ");
 }
 
 void Gyroscope::calcError() {
-  auto trials = 200;
+  Serial.println("Calculating the gyroscope error");
+  const int trials = 200;
 
   accXError = 0;
   accYError = 0;
@@ -29,9 +48,11 @@ void Gyroscope::calcError() {
   gyroYError = 0;
   gyroZError = 0;
 
-  for (auto c = 0; c < trials; ++c) {
+  for (int c = 0; c < trials; ++c) {
     double accX, accY, accZ, gyroX, gyroY, gyroZ;
     readRaw(accX, accY, accZ, gyroX, gyroY, gyroZ);
+
+    Serial.println("Read data");
 
     accXError += atan(accY / sqrt(pow(accX, 2) + pow(accZ, 2))) * 180 / PI;
     accYError += atan(-accX / sqrt(pow(accY, 2) + pow(accZ, 2))) * 180 / PI;
@@ -48,12 +69,20 @@ void Gyroscope::calcError() {
 }
 
 void Gyroscope::initialize() {
+  Serial.println("Init gyro");
   Wire.begin();
+  Serial.println("Begin");
 
   Wire.beginTransmission(MPU);
+    Serial.println("Begin transmission");
+
   Wire.write(0x6B);
   Wire.write(0x00);
+
+    Serial.println("Wrote data");
   Wire.endTransmission(true);
+    Serial.println("End transmission");
+
 
   // Wire.beginTransmission(MPU);
   // Wire.write(0x1C);
@@ -68,7 +97,8 @@ void Gyroscope::initialize() {
   calcError();
 }
 
-void Gyroscope::read(double& roll, double& pitch, double& yaw) {
+void Gyroscope::update()
+{
   double accX, accY, accZ, gyroX, gyroY, gyroZ;
   readRaw(accX, accY, accZ, gyroX, gyroY, gyroZ);
 
@@ -76,15 +106,18 @@ void Gyroscope::read(double& roll, double& pitch, double& yaw) {
   currTime = millis();
   double elapsedTime = (currTime - prevTime) / 1000;
 
-  double accXAngle = atan(accY / sqrt(pow(accX, 2) + pow(accZ, 2))) * 180 / PI - accXError;
-  double accYAngle = atan(-accX / sqrt(pow(accY, 2) + pow(accZ, 2))) * 180 / PI - accYError;
   gyroXAngle += (gyroX - gyroXError) * elapsedTime;
   gyroYAngle += (gyroY - gyroYError) * elapsedTime;
   gyroZAngle += (gyroZ - gyroZError) * elapsedTime;
+}
 
-  roll = COMPLEMENTARY_FILTER * gyroXAngle + (1 - COMPLEMENTARY_FILTER) * accXAngle;
-  pitch = COMPLEMENTARY_FILTER * gyroYAngle + (1 - COMPLEMENTARY_FILTER) * accYAngle;
-  yaw = gyroZAngle;
+double Gyroscope::getAngleX()
+{
+  return gyroXAngle;
 }
+
+
+double Gyroscope::getAngleY()
+{
+  return gyroYAngle;
 }
-;
