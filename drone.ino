@@ -16,8 +16,8 @@ class Drone {
 
   void updateMotors() {
     // double roll, pitch, yaw;
-    const double angleX = map(gyroscope.getAngleX(), -180, 180, -1, 1);
-    const double angleY = map(gyroscope.getAngleY(), -180, 180, -1, 1);
+    const double angleX = 0;//map(gyroscope.getAngleX(), -180, 180, -1, 1);
+    const double angleY = 0;//map(gyroscope.getAngleY(), -180, 180, -1, 1);
 
     // roll -> long side, tilting to INT increases
     // pitch -> short side, tilting to ITG/MPU increases
@@ -27,24 +27,28 @@ class Drone {
     // roll = clamp(roll, -200, 200, -0.5, 0.5);
     // pitch = clamp(pitch, -200, 200, -0.5, 0.5);
 
-    rMotor.setPower(0.25 - angleY / 4);
-    lMotor.setPower(0.25 + angleY / 4);
-    tMotor.setPower(0.25 - angleX / 4);
-    bMotor.setPower(0.25 + angleX / 4);
+    // rMotor.setPower(0.25 - angleY / 4);
+    // lMotor.setPower(0.25 + angleY / 4);
+    // tMotor.setPower(0.25 - angleX / 4);
+    // bMotor.setPower(0.25 + angleX / 4);
 
-    Serial.print(angleX);
-    Serial.print(" ");
-    Serial.print(angleY);
-    Serial.print(" ");
-    Serial.print("Top: ");
-    Serial.print(tMotor.getPower());
-    Serial.print(", Right: ");
-    Serial.print(rMotor.getPower());
-    Serial.print(", Bottom: ");
-    Serial.print(bMotor.getPower());
-    Serial.print(", Left: ");
-    Serial.print(lMotor.getPower());
-    Serial.println();
+    Matrix<3> pos = gyroscope.pos;
+
+    // Serial.print(pos(0));
+    // Serial.print(" ");
+    // Serial.print(pos(1));
+    // Serial.print(" ");
+    // Serial.println(pos(2));
+
+    // Serial.print("Top: ");
+    // Serial.print(tMotor.getPower());
+    // Serial.print(", Right: ");
+    // Serial.print(rMotor.getPower());
+    // Serial.print(", Bottom: ");
+    // Serial.print(bMotor.getPower());
+    // Serial.print(", Left: ");
+    // Serial.print(lMotor.getPower());
+    // Serial.println();
   }
 
 public:
@@ -94,7 +98,7 @@ void setup() {
 }
 
 void loop() {
-  // Serial.println("Update");
+  Serial.println("Update");
   drone.update();
-  delay(100);
+  delay(300);
 }
