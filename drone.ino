@@ -16,8 +16,6 @@ class Drone {
 
   void updateMotors() {
     // double roll, pitch, yaw;
-    const double angleX = 0;//map(gyroscope.getAngleX(), -180, 180, -1, 1);
-    const double angleY = 0;//map(gyroscope.getAngleY(), -180, 180, -1, 1);
 
     // roll -> long side, tilting to INT increases
     // pitch -> short side, tilting to ITG/MPU increases
@@ -26,11 +24,16 @@ class Drone {
     // No more than half rotation
     // roll = clamp(roll, -200, 200, -0.5, 0.5);
     // pitch = clamp(pitch, -200, 200, -0.5, 0.5);
+    const VectorFloat normal = gyroscope.normal;
+    const float angleX = acos(normal.x) - 3.14 / 2;
+    const float angleY = acos(normal.y) - 3.14 / 2;
 
-    // rMotor.setPower(0.25 - angleY / 4);
-    // lMotor.setPower(0.25 + angleY / 4);
-    // tMotor.setPower(0.25 - angleX / 4);
-    // bMotor.setPower(0.25 + angleX / 4);
+    const float averagePower = 0.25;
+
+    rMotor.setPower(averagePower - angleY / 3.14);
+    lMotor.setPower(averagePower + angleY / 3.14);
+    tMotor.setPower(averagePower - angleX / 3.14);
+    bMotor.setPower(averagePower + angleX / 3.14);
 
     Matrix<3> pos = gyroscope.pos;
 

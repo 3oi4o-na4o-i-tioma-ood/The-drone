@@ -42,6 +42,7 @@ THE SOFTWARE.
 #define I2CDEVLIB_MPU6050_TYPEDEF
 
 #include "MPU6050.h"
+#include "helper_3dmath.h"
 
 class MPU6050_6Axis_MotionApps20 : public MPU6050_Base {
     public:
@@ -80,6 +81,7 @@ class MPU6050_6Axis_MotionApps20 : public MPU6050_Base {
         uint8_t dmpGetAccel(int16_t *data, const uint8_t* packet=0);
         uint8_t dmpGetQuaternion(int32_t *data, const uint8_t* packet=0);
         uint8_t dmpGetQuaternion(int16_t *data, const uint8_t* packet=0);
+        uint8_t dmpGetQuaternion(Quaternion* q, const uint8_t* packet);
         uint8_t dmpGet6AxisQuaternion(int32_t *data, const uint8_t* packet=0);
         uint8_t dmpGet6AxisQuaternion(int16_t *data, const uint8_t* packet=0);
         uint8_t dmpGetRelativeQuaternion(int32_t *data, const uint8_t* packet=0);

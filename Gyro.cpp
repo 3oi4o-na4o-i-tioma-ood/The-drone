@@ -4,6 +4,8 @@
 #include "Gyro.h"
 #include "Arduino.h"
 #include "MPU6050_6Axis_MotionApps20.h"
+#include "helper_3dmath.h"
+
 const int MPU = 0x68;
 const int DMPSlaveAddress = 0x7F;
 constexpr int INTERRUPT_PIN = 2;
@@ -89,15 +91,13 @@ void Gyroscope::read(double& accX, double& accY, double& accZ, double& gyroX, do
   Serial.println(" ");
 }
 
-void Gyroscope::readDMP(double& x, double& i, double& j, double& k) {
-  int q1[4];
+void Gyroscope::readDMP(Quaternion& q) {
+  mpu.dmpGetQuaternion(&q, fifoBuffer);
 
-  mpu.dmpGetQuaternion(q1, fifoBuffer);
-
-  x = q1[0] / 16384.0f;
-  i = q1[1] / 16384.0f;
-  j = q1[2] / 16384.0f;
-  k = q1[3] / 16384.0f;
+  // x = q1[0] / 16384.0f;
+  // i = q1[1] / 16384.0f;
+  // j = q1[2] / 16384.0f;
+  // k = q1[3] / 16384.0f;
 }
 
 void Gyroscope::calcError() {
@@ -223,14 +223,17 @@ void Gyroscope::update() {
   // double accX, accY, accZ, gyroX, gyroY, gyroZ;
   // read(accX, accY, accZ, gyroX, gyroY, gyroZ);
 
-  //float ypr[3];
-  double x = 0, i = 0, j = 0, k = 0;
+  normal = {0, 0, 1};
+
+  // double x = 0, i = 0, j = 0, k = 0;
 
   if (dmpReady) {
     if (!mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
       Serial.println("Failed to get packet");
     } else {
-      readDMP(x, i, j, k);
+      Quaternion q;
+      readDMP(q);
+      normal.rotate(&q);
     }
   } else {
     Serial.println("DMP not initialized yet");
@@ -246,13 +249,12 @@ void Gyroscope::update() {
 
   //printMatrix(rotation);
 
-  Serial.print(x);
+  Serial.print(normal.x);
   Serial.print(" ");
-  Serial.print(i);
+  Serial.print(normal.y);
   Serial.print(" ");
-  Serial.print(j);
-  Serial.print(" ");
-  Serial.println(k);
+  Serial.print(normal.z);
+  Serial.println();
 
   // printMatrix(orientation);
 

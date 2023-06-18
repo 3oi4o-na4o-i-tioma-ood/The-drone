@@ -447,19 +447,19 @@ uint8_t MPU6050_6Axis_MotionApps20::dmpGetQuaternion(int16_t *data, const uint8_
     data[3] = ((packet[12] << 8) | packet[13]);
     return 0;
 }
-// uint8_t MPU6050_6Axis_MotionApps20::dmpGetQuaternion(Quaternion *q, const uint8_t* packet) {
-//     // TODO: accommodate different arrangements of sent data (ONLY default supported now)
-//     int16_t qI[4];
-//     uint8_t status = dmpGetQuaternion(qI, packet);
-//     if (status == 0) {
-//         q -> w = (float)qI[0] / 16384.0f;
-//         q -> x = (float)qI[1] / 16384.0f;
-//         q -> y = (float)qI[2] / 16384.0f;
-//         q -> z = (float)qI[3] / 16384.0f;
-//         return 0;
-//     }
-//     return status; // int16 return value, indicates error if this line is reached
-// }
+uint8_t MPU6050_6Axis_MotionApps20::dmpGetQuaternion(Quaternion *q, const uint8_t* packet) {
+    // TODO: accommodate different arrangements of sent data (ONLY default supported now)
+    int16_t qI[4];
+    uint8_t status = dmpGetQuaternion(qI, packet);
+    if (status == 0) {
+        q -> w = (float)qI[0] / 16384.0f;
+        q -> x = (float)qI[1] / 16384.0f;
+        q -> y = (float)qI[2] / 16384.0f;
+        q -> z = (float)qI[3] / 16384.0f;
+        return 0;
+    }
+    return status; // int16 return value, indicates error if this line is reached
+}
 // uint8_t MPU6050_6Axis_MotionApps20::dmpGet6AxisQuaternion(long *data, const uint8_t* packet);
 // uint8_t MPU6050_6Axis_MotionApps20::dmpGetRelativeQuaternion(long *data, const uint8_t* packet);
 uint8_t MPU6050_6Axis_MotionApps20::dmpGetGyro(int32_t *data, const uint8_t* packet) {

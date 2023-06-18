@@ -1,6 +1,8 @@
 #include <BasicLinearAlgebra.h>
 #include <ElementStorage.h>
   #include "MPU6050_6Axis_MotionApps20.h"
+  #include "helper_3dmath.h"
+
 
 using namespace BLA;
 
@@ -13,6 +15,7 @@ private:
 public:
   double currTime;
   double accXError, accYError, gyroXError, gyroYError, gyroZError;
+  VectorFloat normal;
   BLA::Matrix<3, 3> orientation = {
     1, 0, 0,
     0, 1, 0,
@@ -23,7 +26,7 @@ public:
 
   void readRaw(double& accX, double& accY, double& accZ, double& gyroX, double& gyroY, double& gyroZ);
   void read(double& accX, double& accY, double& accZ, double& gyroX, double& gyroY, double& gyroZ);
-  void readDMP(double& x, double& i, double& j, double& k);
+  void readDMP(Quaternion& q);
 
   void calcError();
 
