@@ -249,12 +249,12 @@ void Gyroscope::update() {
 
   //printMatrix(rotation);
 
-  Serial.print(normal.x);
-  Serial.print(" ");
-  Serial.print(normal.y);
-  Serial.print(" ");
-  Serial.print(normal.z);
-  Serial.println();
+  // Serial.print(normal.x);
+  // Serial.print(" ");
+  // Serial.print(normal.y);
+  // Serial.print(" ");
+  // Serial.print(normal.z);
+  // Serial.println();
 
   // printMatrix(orientation);
 

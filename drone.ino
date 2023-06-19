@@ -28,12 +28,21 @@ class Drone {
     const float angleX = acos(normal.x) - 3.14 / 2;
     const float angleY = acos(normal.y) - 3.14 / 2;
 
-    const float averagePower = 0.25;
+    const float averagePower = 0.35;
 
-    rMotor.setPower(averagePower - angleY / 3.14);
-    lMotor.setPower(averagePower + angleY / 3.14);
-    tMotor.setPower(averagePower - angleX / 3.14);
-    bMotor.setPower(averagePower + angleX / 3.14);
+    Serial.print(angleX);
+    Serial.print(" ");
+    Serial.println(angleY);
+
+    Serial.println(averagePower + (angleY + angleX) / 3.14);
+    Serial.println(averagePower + (angleX - angleY) / 3.14);
+    Serial.println(averagePower - (angleX + angleY) / 3.14);
+    Serial.println(averagePower - (angleX - angleY) / 3.14);
+
+    tMotor.setPower(averagePower + (angleY + angleX) / 3.14);
+    rMotor.setPower(averagePower + (angleX - angleY) / 3.14);
+    bMotor.setPower(averagePower - (angleX + angleY) / 3.14);
+    lMotor.setPower(averagePower - (angleX - angleY) / 3.14);
 
     Matrix<3> pos = gyroscope.pos;
 
@@ -62,10 +71,12 @@ public:
 
     Serial.println("Starting the motors");
 
+delay(1000);
     tMotor.start();
     rMotor.start();
     bMotor.start();
     lMotor.start();
+    // delay(5000);
   }
 
   void setThrottle(float throttle) {
@@ -88,6 +99,7 @@ public:
 
   void update() {
     gyroscope.update();
+  //tMotor.setPower(0.4);
     updateMotors();
   }
 };
