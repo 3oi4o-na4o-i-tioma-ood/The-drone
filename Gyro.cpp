@@ -80,17 +80,17 @@ void Gyroscope::read(double& accX, double& accY, double& accZ, double& gyroX, do
   Serial.println(" ");
 }
 
-void Gyroscope::readDPM(double& rotX, double& rotY, double rotZ)
-{
-  Wire.beginTransmission(MPU);
-  Wire.write(0x35);
-  Wire.endTransmission(false);
+// void Gyroscope::readDPM(double& rotX, double& rotY, double rotZ)
+// {
+//   Wire.beginTransmission(MPU);
+//   Wire.write(0x35);
+//   Wire.endTransmission(false);
 
-  Wire.requestFrom(MPU, 6, true);
-  gyroX = (Wire.read() << 8 | Wire.read()) / 131.0;
-  gyroY = (Wire.read() << 8 | Wire.read()) / 131.0;
-  gyroZ = (Wire.read() << 8 | Wire.read()) / 131.0;
-}
+//   Wire.requestFrom(MPU, 6, true);
+//   gyroX = (Wire.read() << 8 | Wire.read()) / 131.0;
+//   gyroY = (Wire.read() << 8 | Wire.read()) / 131.0;
+//   gyroZ = (Wire.read() << 8 | Wire.read()) / 131.0;
+// }
 
 void Gyroscope::calcError() {
   Serial.println("Calculating the gyroscope error");
@@ -215,13 +215,13 @@ void Gyroscope::update() {
   Matrix<3, 3> rotation = getRotation(gyroX * dt / 100, gyroY * dt / 100, gyroZ * dt / 100);
   orientation *= rotation;
 
-  printMatrix(rotation);
+  //printMatrix(rotation);
 
-  Serial.println();
+  //Serial.println();
 
   // printMatrix(orientation);
 
-    Serial.println("---------------");
+    //Serial.println("---------------");
 
   // velocity += Matrix<3>(accX, accY, accZ) * dt;
 

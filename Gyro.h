@@ -20,7 +20,7 @@ public:
 
   void readRaw(double& accX, double& accY, double& accZ, double& gyroX, double& gyroY, double& gyroZ);
   void read(double& accX, double& accY, double& accZ, double& gyroX, double& gyroY, double& gyroZ);
-  void readDPM(double& rotX, double& rotY, double rotZ);
+  // void readDPM(double& rotX, double& rotY, double rotZ);
 
   void calcError();
 
