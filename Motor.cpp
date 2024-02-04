@@ -4,7 +4,6 @@
 
 Motor::Motor(int pin)
   : pin(pin) {
-  servo.attach(pin);
 }
 
 Motor::~Motor() {
@@ -26,11 +25,13 @@ double Motor::getPower() const {
   return (double)servo.read() / 180;
 }
 
-void Motor::start() {
-  servo.write(20);
+void Motor::start() 
+{
+  servo.attach(pin);
+  servo.write(10);
 
   // To do: get rid of the thread-blocking delay
-  delay(500);
-  
+  delay(1000);
+
   servo.write(0);
 }

@@ -3,9 +3,23 @@
 
 #include "Gyro.h"
 #include "Arduino.h"
+#include "MPU6050_6Axis_MotionApps20.h"
+#include "helper_3dmath.h"
+
 const int MPU = 0x68;
+const int DMPSlaveAddress = 0x7F;
+constexpr int INTERRUPT_PIN = 2;
 
+bool dmpReady = false;
+uint8_t mpuIntStatus;
+uint16_t packetSize;
+uint16_t fifoCount;
+uint8_t fifoBuffer[64];
 
+volatile bool mpuInterrupt = false;
+void dmpDataReady() {
+  mpuInterrupt = true;
+}
 
 void Gyroscope::readRaw(double& accX, double& accY, double& accZ, double& gyroX, double& gyroY, double& gyroZ) {
   // Serial.println("Reading data");
@@ -50,18 +64,15 @@ void Gyroscope::read(double& accX, double& accY, double& accZ, double& gyroX, do
   gyroY -= gyroYError;
   gyroZ -= gyroZError;
 
-  if(abs(gyroX) < 1)
-  {
+  if (abs(gyroX) < 1) {
     gyroX = 0;
   }
-  
-  if(abs(gyroY) < 1)
-  {
+
+  if (abs(gyroY) < 1) {
     gyroY = 0;
   }
-  
-  if(abs(gyroZ) < 1)
-  {
+
+  if (abs(gyroZ) < 1) {
     gyroZ = 0;
   }
 
@@ -80,17 +91,14 @@ void Gyroscope::read(double& accX, double& accY, double& accZ, double& gyroX, do
   Serial.println(" ");
 }
 
-// void Gyroscope::readDPM(double& rotX, double& rotY, double rotZ)
-// {
-//   Wire.beginTransmission(MPU);
-//   Wire.write(0x35);
-//   Wire.endTransmission(false);
+void Gyroscope::readDMP(Quaternion& q) {
+  mpu.dmpGetQuaternion(&q, fifoBuffer);
 
-//   Wire.requestFrom(MPU, 6, true);
-//   gyroX = (Wire.read() << 8 | Wire.read()) / 131.0;
-//   gyroY = (Wire.read() << 8 | Wire.read()) / 131.0;
-//   gyroZ = (Wire.read() << 8 | Wire.read()) / 131.0;
-// }
+  // x = q1[0] / 16384.0f;
+  // i = q1[1] / 16384.0f;
+  // j = q1[2] / 16384.0f;
+  // k = q1[3] / 16384.0f;
+}
 
 void Gyroscope::calcError() {
   Serial.println("Calculating the gyroscope error");
@@ -123,30 +131,38 @@ void Gyroscope::calcError() {
 void Gyroscope::initialize() {
   Serial.println("Init gyro");
   Wire.begin();
-  Serial.println("Begin");
+  Wire.setClock(400000);
+  mpu.initialize();
+  pinMode(INTERRUPT_PIN, INPUT);
 
-  Wire.beginTransmission(MPU);
-  Serial.println("Begin transmission");
+  const int devStatus = mpu.dmpInitialize();
+  mpu.setXGyroOffset(220);
+  mpu.setYGyroOffset(76);
+  mpu.setZGyroOffset(-85);
+  mpu.setZAccelOffset(1788);
 
-  Wire.write(0x6B);
-  Wire.write(0x00);
+  Serial.println(devStatus ? "Failed to initialize DMP" : "Successfully initialized DMP");
+  if (devStatus) {
+    return;
+  }
 
-  Serial.println("Wrote data");
-  Wire.endTransmission(true);
-  Serial.println("End transmission");
+  mpu.CalibrateAccel(6);
+  mpu.CalibrateGyro(6);
+  mpu.PrintActiveOffsets();
+  // turn on the DMP, now that it's ready
+  Serial.println(F("Enabling DMP..."));
+  mpu.setDMPEnabled(true);
 
+  Serial.println(F(")..."));
+  attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), dmpDataReady, RISING);
+  mpuIntStatus = mpu.getIntStatus();
 
-  // Wire.beginTransmission(MPU);
-  // Wire.write(0x1C);
-  // Wire.write(4);
-  // Wire.endTransmission(true);
+  // set our DMP Ready flag so the main loop() function knows it's okay to use it
+  Serial.println(F("DMP ready! Waiting for first interrupt..."));
+  dmpReady = true;
 
-  // Wire.beginTransmission(MPU);
-  // Wire.write(0x1B);
-  // Wire.write(0x10);
-  // Wire.endTransmission(true);
-
-  calcError();
+  // get expected DMP packet size for later comparison
+  packetSize = mpu.dmpGetFIFOPacketSize();
 }
 
 Matrix<3, 3> getRotation(double x, double y, double z) {
@@ -182,8 +198,7 @@ Matrix<3, 3> getRotation(double x, double y, double z) {
   // };
 }
 
-void printMatrix(Matrix<3, 3> m)
-{
+void printMatrix(Matrix<3, 3> m) {
   Serial.print(m(0, 0));
   Serial.print(" ");
   Serial.print(m(0, 1));
@@ -205,23 +220,45 @@ void printMatrix(Matrix<3, 3> m)
 }
 
 void Gyroscope::update() {
-  double accX, accY, accZ, gyroX, gyroY, gyroZ;
-  read(accX, accY, accZ, gyroX, gyroY, gyroZ);
+  // double accX, accY, accZ, gyroX, gyroY, gyroZ;
+  // read(accX, accY, accZ, gyroX, gyroY, gyroZ);
+
+  normal = {0, 0, 1};
+
+  // double x = 0, i = 0, j = 0, k = 0;
+
+  if (dmpReady) {
+    if (!mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
+      Serial.println("Failed to get packet");
+    } else {
+      Quaternion q;
+      readDMP(q);
+      normal.rotate(&q);
+    }
+  } else {
+    Serial.println("DMP not initialized yet");
+  }
+
 
   double prevTime = currTime;
   currTime = millis();
   double dt = (currTime - prevTime) / 1000;
 
-  Matrix<3, 3> rotation = getRotation(gyroX * dt / 100, gyroY * dt / 100, gyroZ * dt / 100);
-  orientation *= rotation;
+  //Matrix<3, 3> rotation = getRotation(gyroX * dt / 100, gyroY * dt / 100, gyroZ * dt / 100);
+  //orientation *= rotation;
 
   //printMatrix(rotation);
 
-  //Serial.println();
+  // Serial.print(normal.x);
+  // Serial.print(" ");
+  // Serial.print(normal.y);
+  // Serial.print(" ");
+  // Serial.print(normal.z);
+  // Serial.println();
 
   // printMatrix(orientation);
 
-    //Serial.println("---------------");
+  Serial.println("---------------");
 
   // velocity += Matrix<3>(accX, accY, accZ) * dt;
 
