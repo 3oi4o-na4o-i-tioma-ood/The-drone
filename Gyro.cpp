@@ -16,10 +16,10 @@ uint16_t packetSize;
 uint16_t fifoCount;
 uint8_t fifoBuffer[64];
 
-volatile bool mpuInterrupt = false;
-void dmpDataReady() {
-  mpuInterrupt = true;
-}
+//volatile bool mpuInterrupt = false;
+// void dmpDataReady() {
+//   mpuInterrupt = true;
+// }
 
 void Gyroscope::readRaw(double& accX, double& accY, double& accZ, double& gyroX, double& gyroY, double& gyroZ) {
   // Serial.println("Reading data");
@@ -132,14 +132,23 @@ void Gyroscope::initialize() {
   Serial.println("Init gyro");
   Wire.begin();
   Wire.setClock(400000);
+  Serial.println("beginTransmission");
+  Wire.beginTransmission(MPU);       // Start communication with MPU6050 // MPU=0x68
+  Wire.write(0x6B);                  // Talk to the register 6B
+  Wire.write(0x00);                  // Make reset - place a 0 into the 6B register
+  Wire.endTransmission(true); 
+  Serial.println(mpu.testConnection() ? "I2C OK" : "I2C not OK");
+  Serial.println(mpu.getDeviceID());
   mpu.initialize();
-  pinMode(INTERRUPT_PIN, INPUT);
+  //pinMode(INTERRUPT_PIN, INPUT);
 
   const int devStatus = mpu.dmpInitialize();
   mpu.setXGyroOffset(220);
   mpu.setYGyroOffset(76);
   mpu.setZGyroOffset(-85);
   mpu.setZAccelOffset(1788);
+
+  Serial.print(devStatus);
 
   Serial.println(devStatus ? "Failed to initialize DMP" : "Successfully initialized DMP");
   if (devStatus) {
@@ -154,7 +163,7 @@ void Gyroscope::initialize() {
   mpu.setDMPEnabled(true);
 
   Serial.println(F(")..."));
-  attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), dmpDataReady, RISING);
+  // attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), dmpDataReady, RISING);
   mpuIntStatus = mpu.getIntStatus();
 
   // set our DMP Ready flag so the main loop() function knows it's okay to use it
@@ -240,9 +249,9 @@ void Gyroscope::update() {
   }
 
 
-  double prevTime = currTime;
-  currTime = millis();
-  double dt = (currTime - prevTime) / 1000;
+  // double prevTime = currTime;
+  // currTime = millis();
+  // double dt = (currTime - prevTime) / 1000;
 
   //Matrix<3, 3> rotation = getRotation(gyroX * dt / 100, gyroY * dt / 100, gyroZ * dt / 100);
   //orientation *= rotation;
@@ -258,7 +267,7 @@ void Gyroscope::update() {
 
   // printMatrix(orientation);
 
-  Serial.println("---------------");
+  //Serial.println("---------------");
 
   // velocity += Matrix<3>(accX, accY, accZ) * dt;
 

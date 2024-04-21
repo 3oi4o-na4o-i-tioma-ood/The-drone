@@ -45,6 +45,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ===============================================
 */
+#define I2CDEV_SERIAL_DEBUG 1
 
 #ifndef _I2CDEV_H_
 #define _I2CDEV_H_
