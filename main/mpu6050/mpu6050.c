@@ -597,14 +597,14 @@ void mpu6050_set_memory_bank(mpu6050_handle_t sensor, uint8_t bank, bool prefetc
 
 // MEM_START_ADDR register
 
-void setMemoryStartAddress(mpu6050_handle_t sensor, uint8_t address) {
+void mpu6050_set_memory_start_address(mpu6050_handle_t sensor, uint8_t address) {
     mpu6050_write(sensor, MPU6050_RA_MEM_START_ADDR, &address, 1);
 }
 
 
 bool mpu6050_write_memory_block(mpu6050_handle_t sensor, const uint8_t *data, uint16_t dataSize, uint8_t bank, uint8_t address, bool verify, bool useProgMem) {
     mpu6050_set_memory_bank(sensor, bank, false, false);
-    setMemoryStartAddress(sensor, address);
+    mpu6050_set_memory_start_address(sensor, address);
     uint8_t chunkSize;
     uint8_t *verifyBuffer=0;
     uint8_t *progBuffer=0;
@@ -635,7 +635,7 @@ bool mpu6050_write_memory_block(mpu6050_handle_t sensor, const uint8_t *data, ui
         // verify data if needed
         if (verify && verifyBuffer) {
             mpu6050_set_memory_bank(sensor, bank, false, false);
-            setMemoryStartAddress(sensor, address);
+            mpu6050_set_memory_start_address(sensor, address);
             mpu6050_read(sensor, MPU6050_RA_MEM_R_W, verifyBuffer, chunkSize);
             if (memcmp(progBuffer, verifyBuffer, chunkSize) != 0) {
                 /*Serial.print("Block write verification error, bank ");
@@ -671,7 +671,7 @@ bool mpu6050_write_memory_block(mpu6050_handle_t sensor, const uint8_t *data, ui
         if (i < dataSize) {
             if (address == 0) bank++;
             mpu6050_set_memory_bank(sensor, bank, false, false);
-            setMemoryStartAddress(sensor, address);
+            mpu6050_set_memory_start_address(sensor, address);
         }
     }
     if (verify) free(verifyBuffer);
@@ -895,7 +895,7 @@ esp_err_t mpu6050_dmp_initialize(mpu6050_handle_t sensor)
 
     // get MPU hardware revision
     mpu6050_set_memory_bank(sensor, 0x10, true, true);
-    setMemoryStartAddress(sensor, 0x06);
+    mpu6050_set_memory_start_address(sensor, 0x06);
     ESP_LOGI(TAG, "Checking hardware revision...");
     ESP_LOGI(TAG, "Revision @ user[16][6] = ");
     ESP_LOGI(TAG, "%d", mpu6050_read_memory_byte(sensor));
