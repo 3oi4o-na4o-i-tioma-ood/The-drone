@@ -1,15 +1,15 @@
 dependencies:
-  espressif/led_strip:
-    component_hash: ed1d5c6113fa545e20c7be17e6e7c09d43b18fcb43068e2b2b27a412de6a405a
+  espressif/mpu6050:
+    component_hash: d69219ccb141372b863c511749ffbeab28417ac71c205d7ed7030c308e1b6832
     source:
       service_url: https://api.components.espressif.com/
       type: service
-    version: 2.5.2
+    version: 1.2.0
   idf:
     component_hash: null
     source:
       type: idf
     version: 5.3.0
-manifest_hash: d8dbb24be09d180f1e60d67bc5fcc5467318750d77a4534fbeed2d4c330e10bf
+manifest_hash: 994aec34ed86040310cab1c33b684b0fb713924eebda573c2ee067dda92607f5
 target: esp32
 version: 1.0.0

@@ -1,6 +1,8 @@
-#include "driver/ledc.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
+/*
+ * SPDX-FileCopyrightText: 2015-2021 Espressif Systems (Shanghai) CO LTD
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 #include <stdio.h>
 #include "unity.h"
@@ -9,8 +11,8 @@
 #include "esp_system.h"
 #include "esp_log.h"
 
-#define I2C_MASTER_SCL_IO 22      /*!< gpio number for I2C master clock */
-#define I2C_MASTER_SDA_IO 21      /*!< gpio number for I2C master data  */
+#define I2C_MASTER_SCL_IO 26      /*!< gpio number for I2C master clock */
+#define I2C_MASTER_SDA_IO 25      /*!< gpio number for I2C master data  */
 #define I2C_MASTER_NUM I2C_NUM_0  /*!< I2C port number for master dev */
 #define I2C_MASTER_FREQ_HZ 100000 /*!< I2C master clock frequency */
 
@@ -56,7 +58,7 @@ static void i2c_sensor_mpu6050_init(void)
     TEST_ASSERT_EQUAL(ESP_OK, ret);
 }
 
-void mpu_test()
+TEST_CASE("Sensor mpu6050 test", "[mpu6050][iot][sensor]")
 {
     esp_err_t ret;
     uint8_t mpu6050_deviceid;
@@ -82,50 +84,7 @@ void mpu_test()
     TEST_ASSERT_EQUAL(ESP_OK, ret);
     ESP_LOGI(TAG, "t:%.2f \n", temp.temp);
 
-    //mpu6050_delete(mpu6050);
-    //ret = i2c_driver_delete(I2C_MASTER_NUM);
-    //TEST_ASSERT_EQUAL(ESP_OK, ret);
-}
-
-static void example_ledc_init(void)
-{
-    // Prepare and then apply the LEDC PWM timer configuration
-    ledc_timer_config_t ledc_timer = {
-        .speed_mode = LEDC_LOW_SPEED_MODE,
-        .timer_num = LEDC_TIMER_0,
-        .duty_resolution = LEDC_TIMER_13_BIT,
-        .freq_hz = 1000, // Set output frequency at 4 kHz
-        .clk_cfg = LEDC_AUTO_CLK};
-    ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer));
-
-    // Prepare and then apply the LEDC PWM channel configuration
-    ledc_channel_config_t ledc_channel = {
-        .speed_mode = LEDC_LOW_SPEED_MODE,
-        .channel = LEDC_CHANNEL_0,
-        .timer_sel = LEDC_TIMER_0,
-        .intr_type = LEDC_INTR_DISABLE,
-        .gpio_num = 25,
-        .duty = 4096, // Set duty to 0%
-        .hpoint = 0};
-    ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel));
-}
-
-void app_main()
-{
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
-    printf("Hi");
-
-    mpu_test();
-
-    esp_err_t ret;
-    mpu6050_acce_value_t acce;
-
-    while (true)
-    {
-        vTaskDelay(50 / portTICK_PERIOD_MS);
-        ret = mpu6050_get_acce(mpu6050, &acce);
-        TEST_ASSERT_EQUAL(ESP_OK, ret);
-        ESP_LOGI(TAG, "acce_x:%.2f, acce_y:%.2f, acce_z:%.2f\n", acce.acce_x, acce.acce_y, acce.acce_z);
-    }
-    // example_ledc_init();
+    mpu6050_delete(mpu6050);
+    ret = i2c_driver_delete(I2C_MASTER_NUM);
+    TEST_ASSERT_EQUAL(ESP_OK, ret);
 }
