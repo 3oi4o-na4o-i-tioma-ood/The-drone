@@ -117,6 +117,8 @@ void app_main()
 
     mpu_test();
 
+    mpu6050_dmp_initialize();
+
     esp_err_t ret;
     mpu6050_acce_value_t acce;
 
