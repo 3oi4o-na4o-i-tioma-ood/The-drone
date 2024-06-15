@@ -1170,6 +1170,8 @@ uint8_t mpu6050_dmp_get_quaternion(int16_t *buffer)
     return 0;
 }
 
+
+
 bool mpu6050_write_prog_memory_block(mpu6050_handle_t sensor, const uint8_t *data, uint16_t dataSize, uint8_t bank, uint8_t address, bool verify) {
     return mpu6050_write_memory_block(sensor, data, dataSize, bank, address, verify, true);
 }
