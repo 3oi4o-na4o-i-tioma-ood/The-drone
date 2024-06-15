@@ -406,6 +406,17 @@ extern "C" {
 
 #define pgm_read_byte(addr) (*(const unsigned char *)(addr))
 
+
+#define I2CDEVLIB_WIRE_BUFFER_LENGTH 32
+
+#define MPU6050_FIFO_DEFAULT_TIMEOUT 11000
+
+
+
+#define MPU6050_DMP_CODE_SIZE       1929    // dmpMemory[]
+#define MPU6050_DMP_CONFIG_SIZE     192     // dmpConfig[]
+#define MPU6050_DMP_UPDATES_SIZE    47      // dmpUpdates[]
+
 /* --- Copied from arduino mpu6050 library --- end --- */
 
 
@@ -786,9 +797,12 @@ esp_err_t mpu6050_get_temp(mpu6050_handle_t sensor, mpu6050_temp_value_t *const 
 esp_err_t mpu6050_complimentory_filter(mpu6050_handle_t sensor, const mpu6050_acce_value_t *const acce_value,
                                        const mpu6050_gyro_value_t *const gyro_value, complimentary_angle_t *const complimentary_angle);
 
-esp_err_t mpu6050_dmp_initialize();
+esp_err_t mpu6050_dmp_initialize(mpu6050_handle_t sensor);
+void mpu6050_set_DMP_enabled(mpu6050_handle_t sensor, bool enabled);
 
-bool mpu6050_write_memory_block(mpu6050_handle_t sensor, const uint8_t *data, uint16_t dataSize, uint8_t bank, uint8_t address, bool verify, bool useProgMem);
+int8_t mpu6050_get_current_FIFO_packet(mpu6050_handle_t sensor);
+
+uint8_t mpu6050_dmp_get_quaternion(int16_t *buffer);
 
 
 #ifdef __cplusplus
