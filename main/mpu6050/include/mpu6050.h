@@ -804,6 +804,8 @@ int8_t mpu6050_get_current_FIFO_packet(mpu6050_handle_t sensor);
 
 uint8_t mpu6050_dmp_get_quaternion(int16_t *buffer);
 
+esp_err_t mpu6050_init(mpu6050_handle_t* const mpu6050, i2c_port_t port, int SDA_pin, int SCL_pin, int I2C_frequency);
+
 
 #ifdef __cplusplus
 }
