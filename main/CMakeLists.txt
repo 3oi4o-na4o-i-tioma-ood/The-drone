@@ -1,9 +1,11 @@
 idf_component_register(SRCS "drone.c"
     "mpu6050/mpu6050.c"
     "BLDC/BLDC.c"
-    
+    "stabilization/stabilization.c"
+
 INCLUDE_DIRS "."
     "mpu6050/include"
     "linear_algebra"
     "BLDC"
+    "stabilization"
 )
