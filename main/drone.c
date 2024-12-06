@@ -23,6 +23,28 @@ static const char *TAG = "mpu6050 test";
 
 static mpu6050_handle_t mpu6050 = NULL;
 
+#define gyro_recent_values_count 1
+
+float gyro_recent_values[gyro_recent_values_count];
+
+int oldest_value_index = 0;
+
+float angleIntegralY = 0;
+
+// Returns the average of the most recent values after the update
+float save_new_gyro_value(float value) {
+    gyro_recent_values[oldest_value_index] = value;
+
+    oldest_value_index = (oldest_value_index + 1) % gyro_recent_values_count;
+
+    float sum = 0;
+    for(int i = 0; i < gyro_recent_values_count; i++) {
+        sum += gyro_recent_values[i];
+    }
+
+    return sum / gyro_recent_values_count;
+}
+
 typedef struct
 {
     BLDC motorTop;
@@ -45,12 +67,12 @@ void mpu6050_get_orientation(VectorFloat *const i, VectorFloat *const j, VectorF
         (float)quaternion[2] / 16384.0f,
         (float)quaternion[3] / 16384.0f};
 
-    i->x = sqrt(2) / 2;
-    i->y = sqrt(2) / 2;
+    i->x = 1;
+    i->y = 0;
     i->z = 0;
 
-    j->x = sqrt(2) / 2;
-    j->y = -sqrt(2) / 2;
+    j->x = 0;
+    j->y = 1;
     j->z = 0;
 
     k->x = 0;
@@ -62,7 +84,8 @@ void mpu6050_get_orientation(VectorFloat *const i, VectorFloat *const j, VectorF
     rotateWithQuaternion(k, &q);
 }
 
-void gyro_rotate45(const double gyroX, const double gyroY, double* gyroXR, double* gyroYR) {
+void gyro_rotate45(const double gyroX, const double gyroY, double *gyroXR, double *gyroYR)
+{
     *gyroXR = (gyroX + gyroY) * sqrt(2) / 2;
     *gyroYR = (gyroX - gyroY) * sqrt(2) / 2;
 }
@@ -118,13 +141,12 @@ float angleErrorY = 0;
 
 void app_main()
 {
-    // vTaskDelay(1000 / portTICK_PERIOD_MS);
     printf("Hi");
 
-    // BLDC_create(&drone.motorTop, 25, LEDC_CHANNEL_0);
-    // BLDC_create(&drone.motorRight, 26, LEDC_CHANNEL_1);
-    // BLDC_create(&drone.motorBottom, 27, LEDC_CHANNEL_2);
-    // BLDC_create(&drone.motorLeft, 33, LEDC_CHANNEL_3);
+    for (int i = 0; i < gyro_recent_values_count; i++)
+    {
+        gyro_recent_values[i] = 0;
+    }
 
     BLDC_create(&drone.motorLeft, 32, LEDC_CHANNEL_0);
     BLDC_create(&drone.motorRight, 33, LEDC_CHANNEL_1);
@@ -132,61 +154,41 @@ void app_main()
     // BLDC_factory_reset();
     // vTaskDelay(15000 / portTICK_PERIOD_MS);
 
-    vTaskDelay(3500 / portTICK_PERIOD_MS);
-    BLDC_set_throttle(&drone.motorTop, 0);
+    vTaskDelay(500 / portTICK_PERIOD_MS);
+    // BLDC_set_throttle(&drone.motorTop, 0);
     BLDC_set_throttle(&drone.motorRight, 0);
-    BLDC_set_throttle(&drone.motorBottom, 0);
+    // BLDC_set_throttle(&drone.motorBottom, 0);
     BLDC_set_throttle(&drone.motorLeft, 0);
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    vTaskDelay(500 / portTICK_PERIOD_MS);
 
     mpu6050_init(&mpu6050, I2C_MASTER_NUM, I2C_MASTER_SDA_IO, I2C_MASTER_SCL_IO, I2C_MASTER_FREQ_HZ);
     mpu6050_gyro_value_t gyro;
 
-    vTaskDelay(5000 / portTICK_PERIOD_MS);
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
 
-    for (int i = 0; i < 100; i++)
+    const int errorsInterations = 100;
+
+    for (int i = 0; i < errorsInterations; i++)
     {
         mpu6050_get_current_FIFO_packet(mpu6050);
 
         VectorFloat i, j, k;
         mpu6050_get_orientation(&i, &j, &k);
 
-        angleErrorX += asin(i.z) / M_PI * 180;
-        angleErrorY += asin(j.z) / M_PI * 180;
+        angleErrorX += asin(j.z) / M_PI * 180;
+        angleErrorY += asin(i.z) / M_PI * 180;
+
+        ESP_LOGI(TAG, "Angle x: %.2f, y: %.2f", asin(j.z) / M_PI * 180, asin(i.z) / M_PI * 180);
 
         vTaskDelay(50 / portTICK_PERIOD_MS);
     }
 
-    angleErrorX /= 300;
-    angleErrorY /= 300;
+    angleErrorX /= errorsInterations;
+    angleErrorY /= errorsInterations;
 
     ESP_LOGI(TAG, "Angle error x: %.2f, y: %.2f", angleErrorX, angleErrorY);
 
     vTaskDelay(1000 / portTICK_PERIOD_MS);
-
-    for (float t = 0; t <= 1; t += 0.24)
-    {
-
-        BLDC_set_throttle(&drone.motorTop, t * 0.5);
-        BLDC_set_throttle(&drone.motorBottom, t * 0.5);
-        BLDC_set_throttle(&drone.motorLeft, t * 0.5);
-        BLDC_set_throttle(&drone.motorRight, t * 0.5);
-        vTaskDelay(500 / portTICK_PERIOD_MS);
-    }
-
-    for (float t = 1; t > 0; t -= 0.24)
-    {
-        BLDC_set_throttle(&drone.motorTop, t * 0.5);
-        BLDC_set_throttle(&drone.motorBottom, t * 0.5);
-        BLDC_set_throttle(&drone.motorLeft, t * 0.5);
-        BLDC_set_throttle(&drone.motorRight, t * 0.5);
-        vTaskDelay(500 / portTICK_PERIOD_MS);
-    }
-
-    BLDC_set_throttle(&drone.motorTop, 0);
-    BLDC_set_throttle(&drone.motorRight, 0);
-    BLDC_set_throttle(&drone.motorBottom, 0);
-    BLDC_set_throttle(&drone.motorLeft, 0);
 
     while (true)
     {
@@ -196,7 +198,7 @@ void app_main()
         // printf("%" PRId64 "\n", time_us);
 
         // BLDC_set_throttle(&drone.motorTop, throttle);
-        vTaskDelay(100 / portTICK_PERIOD_MS);
+        vTaskDelay(10 / portTICK_PERIOD_MS);
 
         mpu6050_get_current_FIFO_packet(mpu6050);
 
@@ -205,33 +207,30 @@ void app_main()
 
         VectorFloat angle;
 
-        angle.x = asin(i.z) / M_PI * 180 - angleErrorX;
-        angle.y = asin(j.z) / M_PI * 180 - angleErrorY;
+        angle.x = asin(j.z) / M_PI * 180 - angleErrorX;
+        angle.y = asin(i.z) / M_PI * 180 - angleErrorY;
+
+        angleIntegralY += angle.y * 0.01; // Assuming dt is constant 0.01s
 
         mpu6050_get_gyro(mpu6050, &gyro);
 
-        double gyroX;
-        double gyroY;
+        float gyroAvY = save_new_gyro_value(gyro.gyro_y);
 
-        gyro_rotate45(gyro.gyro_x, gyro.gyro_y, &gyroX, &gyroY);
-
-        double accX = calcAcc(-gyroX, angle.x) * 0.5;
-        double accY = calcAcc(-gyroY, angle.y) * 0.5;
+        double accY = calcAcc(gyroAvY, angle.y, angleIntegralY) * 0.5;
 
         // ESP_LOGI(TAG, "i.z: %.2f, j.z: %.2f", i.z, j.z);
-        //ESP_LOGI(TAG, "Angle x: %.2f, y: %.2f", angle.x, angle.y);
-        ESP_LOGI(TAG, "Gyro x: %.2f, y: %.2f", gyroX, gyroY);
-        // ESP_LOGI(TAG, "Acc x: %.2f, y: %.2f\n", accX, accY);
+        ESP_LOGI(TAG, "Angle: %.2f", angle.y);
+        ESP_LOGI(TAG, "Gyro : %.2f", gyro.gyro_y);
+        ESP_LOGI(TAG, "Integ: %.2f\n", angleIntegralY);
+        
+        // ESP_LOGI(TAG, "Gyro av x: %.2f", gyroAvY);
+        ESP_LOGI(TAG, "Acc  : %.2f", accY);
 
-        ESP_LOGI(TAG, "top: %.2f, bottom: %.2f, left: %.2f, right: %.2f\n",
-                 minmax(0.4 + accY, 0.1, 1) * 0.5,
+        ESP_LOGI(TAG, "left: %.2f, right: %.2f\n",
                  minmax(0.4 - accY, 0.1, 1) * 0.5,
-                 minmax(0.4 - accX, 0.1, 1) * 0.5,
-                 minmax(0.4 + accX, 0.1, 1) * 0.5);
+                 minmax(0.4 + accY, 0.1, 1) * 0.5);
 
-        BLDC_set_throttle(&drone.motorTop,      minmax(0.4 + accY, 0.1, 1) * 0.5);
-        BLDC_set_throttle(&drone.motorBottom,   minmax(0.4 - accY, 0.1, 1) * 0.5);
-        BLDC_set_throttle(&drone.motorLeft,     minmax(0.4 - accX, 0.1, 1) * 0.5);
-        BLDC_set_throttle(&drone.motorRight,    minmax(0.4 + accX, 0.1, 1) * 0.5);
+        BLDC_set_throttle(&drone.motorLeft, minmax(0.4 - accY, 0.1, 1) * 0.5);
+        BLDC_set_throttle(&drone.motorRight, minmax(0.4 + accY, 0.1, 1) * 0.5);
     }
 }

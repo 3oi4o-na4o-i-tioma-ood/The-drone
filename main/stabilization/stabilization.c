@@ -1,25 +1,40 @@
 #include "stabilization.h"
 #include <stdio.h>
 
-int sign(double val)
+// int sign(double val)
+// {
+//     return (0.0 < val) - (val < 0.0);
+// }
+
+// double abs_d(double x)
+// {
+//     return x > 0 ? x : -x;
+// }
+
+// int closeEnough(double a, double b)
+// {
+//     double diff = a - b;
+//     return abs_d(diff) < 1 ? 1 : 0;
+// }
+
+static float max(float a, float b)
 {
-    return (0.0 < val) - (val < 0.0);
+    return a > b ? a : b;
 }
 
-double abs_d(double x)
+static float min(float a, float b)
 {
-    return x > 0 ? x : -x;
+    return a < b ? a : b;
 }
 
-int closeEnough(double a, double b)
+static float minmax(float n, float n_min, float n_max)
 {
-    double diff = a - b;
-    return abs_d(diff) < 1 ? 1 : 0;
+    return min(max(n, n_min), n_max);
 }
 
 // v [deg / s]
 // x [deg]
-double calcAcc(double v, double x)
+double calcAcc(double v, double angle, double angleIntegral)
 {
     //printf("Calculate acc. x: %.2f, v: %.2f \n", x, v);
     // double a = 0;
@@ -52,10 +67,13 @@ double calcAcc(double v, double x)
     //     }
     // }
 
-    const double P = 0;//-7;
-    const double D = -30;
+    const double P = -0.1;
+    const double I = -0.5;
+    const double D = -0.03;
 
-    const double PD = (P * x + D * v) / aMax;
+    const double boundedIntegral = minmax(angleIntegral, -5, 5);
 
-    return PD > 1 ? 1 : PD < -1 ? -1 : PD;
+    const double PID = P * angle + I * boundedIntegral + D * v;
+
+    return PID > 1 ? 1 : PID < -1 ? -1 : PID;
 }

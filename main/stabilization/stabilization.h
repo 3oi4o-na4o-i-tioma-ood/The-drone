@@ -1,4 +1,4 @@
-double calcAcc(double v, double x);
+double calcAcc(double v, double angle, double angleIntegral);
 
 int sign(double val);
 
