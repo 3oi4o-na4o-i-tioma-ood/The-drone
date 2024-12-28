@@ -39,7 +39,7 @@ double calcAcc(double v, double angle, double angleIntegral)
     //printf("Calculate acc. x: %.2f, v: %.2f \n", x, v);
     // double a = 0;
     // const double expectedA = abs_d(v * v / 2 / x);
-    const double aMax = 90; // [deg / s^2]
+    //const double aMax = 90; // [deg / s^2]
 
     // // printf("Expected a: %.2f \n", expectedA);
 
@@ -67,13 +67,13 @@ double calcAcc(double v, double angle, double angleIntegral)
     //     }
     // }
 
-    const double P = -0.1;
-    const double I = -0.5;
-    const double D = -0.03;
+    const double P = -0.002;
+    const double I = P * 0.5;
+    const double D = 0;//-0.08;
 
-    const double boundedIntegral = minmax(angleIntegral, -5, 5);
+    //const double boundedIntegral = minmax(angleIntegral, -5, 5);
 
-    const double PID = P * angle + I * boundedIntegral + D * v;
+    const double PID = P * angle + I * angleIntegral + D * v;
 
     return PID > 1 ? 1 : PID < -1 ? -1 : PID;
 }

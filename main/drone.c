@@ -13,6 +13,7 @@
 #include "stabilization.h"
 #include "esp_sntp.h"
 #include <inttypes.h>
+#include <math.h>
 
 #define I2C_MASTER_SCL_IO 22      /*!< gpio number for I2C master clock */
 #define I2C_MASTER_SDA_IO 21      /*!< gpio number for I2C master data  */
@@ -166,25 +167,25 @@ void app_main()
 
     vTaskDelay(1000 / portTICK_PERIOD_MS);
 
-    const int errorsInterations = 100;
+    // const int errorsInterations = 100;
 
-    for (int i = 0; i < errorsInterations; i++)
-    {
-        mpu6050_get_current_FIFO_packet(mpu6050);
+    // for (int i = 0; i < errorsInterations; i++)
+    // {
+    //     mpu6050_get_current_FIFO_packet(mpu6050);
 
-        VectorFloat i, j, k;
-        mpu6050_get_orientation(&i, &j, &k);
+    //     VectorFloat i, j, k;
+    //     mpu6050_get_orientation(&i, &j, &k);
 
-        angleErrorX += asin(j.z) / M_PI * 180;
-        angleErrorY += asin(i.z) / M_PI * 180;
+    //     angleErrorX += asin(j.z) / M_PI * 180;
+    //     angleErrorY += asin(i.z) / M_PI * 180;
 
-        ESP_LOGI(TAG, "Angle x: %.2f, y: %.2f", asin(j.z) / M_PI * 180, asin(i.z) / M_PI * 180);
+    //     ESP_LOGI(TAG, "Angle x: %.2f, y: %.2f", asin(j.z) / M_PI * 180, asin(i.z) / M_PI * 180);
 
-        vTaskDelay(50 / portTICK_PERIOD_MS);
-    }
+    //     vTaskDelay(50 / portTICK_PERIOD_MS);
+    // }
 
-    angleErrorX /= errorsInterations;
-    angleErrorY /= errorsInterations;
+    // angleErrorX /= errorsInterations;
+    // angleErrorY /= errorsInterations;
 
     ESP_LOGI(TAG, "Angle error x: %.2f, y: %.2f", angleErrorX, angleErrorY);
 
@@ -210,13 +211,17 @@ void app_main()
         angle.x = asin(j.z) / M_PI * 180 - angleErrorX;
         angle.y = asin(i.z) / M_PI * 180 - angleErrorY;
 
+        if(isnan(angle.y)) {
+            continue;
+        }
+
         angleIntegralY += angle.y * 0.01; // Assuming dt is constant 0.01s
 
         mpu6050_get_gyro(mpu6050, &gyro);
 
         float gyroAvY = save_new_gyro_value(gyro.gyro_y);
 
-        double accY = calcAcc(gyroAvY, angle.y, angleIntegralY) * 0.5;
+        double accY = calcAcc(gyroAvY, angle.y, angleIntegralY);
 
         // ESP_LOGI(TAG, "i.z: %.2f, j.z: %.2f", i.z, j.z);
         ESP_LOGI(TAG, "Angle: %.2f", angle.y);
@@ -230,7 +235,7 @@ void app_main()
                  minmax(0.4 - accY, 0.1, 1) * 0.5,
                  minmax(0.4 + accY, 0.1, 1) * 0.5);
 
-        BLDC_set_throttle(&drone.motorLeft, minmax(0.4 - accY, 0.1, 1) * 0.5);
-        BLDC_set_throttle(&drone.motorRight, minmax(0.4 + accY, 0.1, 1) * 0.5);
+        BLDC_set_throttle(&drone.motorLeft, minmax(0.4 - accY, 0.1, 1) * 0.6);
+        BLDC_set_throttle(&drone.motorRight, minmax(0.4 + accY, 0.1, 1) * 0.6);
     }
 }
