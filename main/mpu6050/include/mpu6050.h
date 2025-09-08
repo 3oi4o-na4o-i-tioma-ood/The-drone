@@ -423,7 +423,7 @@ extern "C" {
 
 #define MPU6050_I2C_ADDRESS         0x68u /*!< I2C address with AD0 pin low */
 #define MPU6050_I2C_ADDRESS_1       0x69u /*!< I2C address with AD0 pin high */
-#define MPU6050_WHO_AM_I_VAL        0x68u
+#define MPU6050_WHO_AM_I_VAL        0x70u
 
 typedef enum {
     ACCE_FS_2G  = 0,     /*!< Accelerometer full scale range is +/- 2g */

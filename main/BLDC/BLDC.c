@@ -12,6 +12,9 @@ static const char *TAG = "BLDC";
 #define LEDC_DUTY_RES LEDC_TIMER_13_BIT // Set duty resolution to 13 bits
 #define LEDC_FREQUENCY (400)
 
+#define MIN_DUTY_US 1100
+#define MAX_DUTY_US 1900
+
 void BLDC_create(BLDC *bldc, int gpio, int channel)
 {
     // Prepare and then apply the LEDC PWM timer configuration
@@ -19,7 +22,7 @@ void BLDC_create(BLDC *bldc, int gpio, int channel)
         .speed_mode = LEDC_MODE,
         .timer_num = LEDC_TIMER,
         .duty_resolution = LEDC_DUTY_RES,
-        .freq_hz = LEDC_FREQUENCY, // Set output frequency at 4 kHz
+        .freq_hz = LEDC_FREQUENCY, // Set output frequency at 400 Hz
         .clk_cfg = LEDC_AUTO_CLK};
     ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer));
 
@@ -30,7 +33,7 @@ void BLDC_create(BLDC *bldc, int gpio, int channel)
         .timer_sel = LEDC_TIMER,
         .intr_type = LEDC_INTR_DISABLE,
         .gpio_num = gpio,
-        .duty = 8192 * 1900 / 2500, // Period is 1 / 400 s = 2500 us. The range is from 1100 to 1900 us. Set to 1100, which is 1100 / 2500 of the full duty. 1100 / 2500 * 8192
+        .duty = 8192 * MIN_DUTY_US / 2500, // Period is 1 / 400 s = 2500 us. The range is from 1100 to 1900 us. Set to 1100, which is 1100 / 2500 of the full duty. 1100 / 2500 * 8192
         .hpoint = 0};
 
     ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel));
@@ -48,7 +51,7 @@ void BLDC_set_throttle(BLDC *bldc, float throttle)
         return;
     }
 
-    int duty = (1 << LEDC_DUTY_RES) * (1100 + throttle * (1900 - 1100)) / 2500;
+    int duty = (1 << LEDC_DUTY_RES) * (MIN_DUTY_US + throttle * (MAX_DUTY_US - MIN_DUTY_US)) / 2500;
     // ESP_LOGI(TAG, "Duty: %d", duty);
     // ledc_set_duty(LEDC_MODE, bldc->channel, duty);
     ledc_channel_config_t ledc_channel = {
