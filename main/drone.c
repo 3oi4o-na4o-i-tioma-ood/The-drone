@@ -205,12 +205,12 @@ void app_main()
         // BLDC_set_throttle(&drone.motorTop, throttle);
         vTaskDelay(10 / portTICK_PERIOD_MS);
         msSinceTakeOff += 10;
-        if (msSinceTakeOff >= 5000)
+        if (msSinceTakeOff >= 2000)
         {
             average_throttle = 0.3;
         }
 
-        if(msSinceTakeOff >= 7000) {
+        if(msSinceTakeOff >= 4000) {
             BLDC_set_throttle(&drone.motorTop, 0);
             BLDC_set_throttle(&drone.motorRight, 0);
             BLDC_set_throttle(&drone.motorBottom, 0);
