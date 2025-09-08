@@ -130,6 +130,7 @@ float angleErrorX = 0;
 float angleErrorY = 0;
 
 int msSinceTakeOff = 0;
+float average_throttle = 0.6;
 
 void app_main()
 {
@@ -206,6 +207,10 @@ void app_main()
         msSinceTakeOff += 10;
         if (msSinceTakeOff >= 5000)
         {
+            average_throttle = 0.3;
+        }
+
+        if(msSinceTakeOff >= 7000) {
             BLDC_set_throttle(&drone.motorTop, 0);
             BLDC_set_throttle(&drone.motorRight, 0);
             BLDC_set_throttle(&drone.motorBottom, 0);
@@ -249,10 +254,10 @@ void app_main()
         //          minmax(0.4 - accY, 0.1, 1) * 0.5,
         //          minmax(0.4 + accY, 0.1, 1) * 0.5);
 
-        BLDC_set_throttle(&drone.motorLeft, minmax(0.4 - accX, 0.1, 1) * 0.6);
-        BLDC_set_throttle(&drone.motorRight, minmax(0.4 + accX, 0.1, 1) * 0.6);
+        BLDC_set_throttle(&drone.motorLeft, minmax(0.4 - accX, 0.1, 1) * average_throttle);
+        BLDC_set_throttle(&drone.motorRight, minmax(0.4 + accX, 0.1, 1) * average_throttle);
 
-        BLDC_set_throttle(&drone.motorTop, minmax(0.4 + accY, 0.1, 1) * 0.6);
-        BLDC_set_throttle(&drone.motorBottom, minmax(0.4 - accY, 0.1, 1) * 0.6);
+        BLDC_set_throttle(&drone.motorTop, minmax(0.4 + accY, 0.1, 1) * average_throttle);
+        BLDC_set_throttle(&drone.motorBottom, minmax(0.4 - accY, 0.1, 1) * average_throttle);
     }
 }
