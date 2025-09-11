@@ -130,7 +130,7 @@ float angleErrorX = 0;
 float angleErrorY = 0;
 
 int msSinceTakeOff = 0;
-float average_throttle = 0.6;
+float average_throttle = 0.8;
 
 void app_main()
 {
@@ -154,11 +154,11 @@ void app_main()
     ESP_LOGI(TAG, "Throttle to 0");
 
     // vTaskDelay(500 / portTICK_PERIOD_MS);
-    BLDC_set_throttle(&drone.motorTop, 0.25);
-    BLDC_set_throttle(&drone.motorRight, 0.25);
-    BLDC_set_throttle(&drone.motorBottom, 0.25);
-    BLDC_set_throttle(&drone.motorLeft, 0.25);
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    // BLDC_set_throttle(&drone.motorTop, 0.25);
+    // BLDC_set_throttle(&drone.motorRight, 0.25);
+    // BLDC_set_throttle(&drone.motorBottom, 0.25);
+    // BLDC_set_throttle(&drone.motorLeft, 0.25);
+    // vTaskDelay(1000 / portTICK_PERIOD_MS);
 
     BLDC_set_throttle(&drone.motorTop, 0);
     BLDC_set_throttle(&drone.motorRight, 0);
@@ -193,7 +193,7 @@ void app_main()
 
     ESP_LOGI(TAG, "Angle error x: %.2f, y: %.2f", angleErrorX, angleErrorY);
 
-    vTaskDelay(5000 / portTICK_PERIOD_MS);
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
 
     while (true)
     {
@@ -205,12 +205,12 @@ void app_main()
         // BLDC_set_throttle(&drone.motorTop, throttle);
         vTaskDelay(10 / portTICK_PERIOD_MS);
         msSinceTakeOff += 10;
-        if (msSinceTakeOff >= 2000)
+        if (msSinceTakeOff >= 500)
         {
-            average_throttle = 0.3;
+            average_throttle = 0.6;
         }
 
-        if(msSinceTakeOff >= 4000) {
+        if(msSinceTakeOff >= 700) {
             BLDC_set_throttle(&drone.motorTop, 0);
             BLDC_set_throttle(&drone.motorRight, 0);
             BLDC_set_throttle(&drone.motorBottom, 0);

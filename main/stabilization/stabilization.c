@@ -67,9 +67,9 @@ double calcAcc(double v, double angle, double angleIntegral)
     //     }
     // }
 
-    const double P = -0.001;
+    const double P = -0.0005;
     const double I = P * 0.3;
-    const double D = -0.003;
+    const double D = -0.001;
 
     //const double boundedIntegral = minmax(angleIntegral, -5, 5);
 
