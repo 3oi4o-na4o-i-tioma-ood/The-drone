@@ -433,6 +433,16 @@ CONFIG_PARTITION_TABLE_MD5=y
 # end of Partition Table
 
 #
+# LoRa Configuration
+#
+CONFIG_CS_GPIO=15
+CONFIG_RST_GPIO=32
+CONFIG_MISO_GPIO=13
+CONFIG_MOSI_GPIO=12
+CONFIG_SCK_GPIO=14
+# end of LoRa Configuration
+
+#
 # Compiler options
 #
 CONFIG_COMPILER_OPTIMIZATION_DEBUG=y
