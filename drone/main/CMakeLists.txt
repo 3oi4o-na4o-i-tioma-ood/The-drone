@@ -3,6 +3,7 @@ idf_component_register(SRCS "drone.c"
     "BLDC/BLDC.c"
     "stabilization/stabilization.c"
     "lora/lora.c"
+    "wifi/wifi.c"
 
 INCLUDE_DIRS "."
     "mpu6050/include"
@@ -10,4 +11,5 @@ INCLUDE_DIRS "."
     "BLDC"
     "stabilization"
     "lora/include"
+    "wifi"
 )

@@ -14,13 +14,22 @@
 #include <inttypes.h>
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "lora.h"
+#include "wifi.h"
+#include "esp_timer.h"
 
 #define I2C_MASTER_SCL_IO 22      /*!< gpio number for I2C master clock */
 #define I2C_MASTER_SDA_IO 21      /*!< gpio number for I2C master data  */
 #define I2C_MASTER_NUM I2C_NUM_0  /*!< I2C port number for master dev */
 #define I2C_MASTER_FREQ_HZ 100000 /*!< I2C master clock frequency */
+
+#define LEFT_BUTTON_BIT 0
+#define RIGHT_BUTTON_BIT 1
+#define UP_BUTTON_BIT 2
+#define DOWN_BUTTON_BIT 3
+#define CENTER_BUTTON_BIT 4
 
 static const char *TAG = "mpu6050 test";
 
@@ -120,6 +129,7 @@ float angleErrorY = 0;
 
 int msSinceTakeOff = 0;
 float average_throttle = 0.8;
+float angularSpeed = 0;
 
 void task_tx(void *p) {
   ESP_LOGI(TAG, "task_tx started");
@@ -134,6 +144,35 @@ void task_tx(void *p) {
   ESP_LOGI(TAG, "task_tx ended");
 }
 
+typedef struct __attribute__((packed)) {
+  uint8_t buttons;
+  uint8_t joystick_x; // 0..255
+  uint8_t joystick_y; // 0..255
+} rc_udp_packet_t;
+
+static volatile rc_udp_packet_t s_last_rc_pkt = {0};
+static volatile int64_t s_last_rc_pkt_us = 0;
+
+static void udp_rx_cb(const uint8_t *data, size_t len, const char *from_ip,
+                      uint16_t from_port, void *ctx) {
+  (void)ctx;
+  if (len == sizeof(rc_udp_packet_t)) {
+    rc_udp_packet_t pkt;
+    memcpy(&pkt, data, sizeof(pkt)); // safe even if data is unaligned
+
+    s_last_rc_pkt = pkt;
+    s_last_rc_pkt_us = esp_timer_get_time();
+
+    ESP_LOGI("udp", "rc from %s:%u buttons=0x%02x joy=(%u,%u)", from_ip,
+             (unsigned)from_port, (unsigned)pkt.buttons,
+             (unsigned)pkt.joystick_x, (unsigned)pkt.joystick_y);
+    return;
+  }
+
+  ESP_LOGI("udp", "rx %u bytes from %s:%u (unparsed)", (unsigned)len, from_ip,
+           (unsigned)from_port);
+}
+
 void app_main() {
   printf("Hi");
   ESP_LOGI(TAG, "Hi");
@@ -143,10 +182,12 @@ void app_main() {
   lora_enable_crc();
   xTaskCreate(&task_tx, "task_tx", 2048, NULL, 5, NULL);
 
-  while (true) {
-    ESP_LOGI(TAG, "Loop");
-    vTaskDelay(pdMS_TO_TICKS(1000));
-  }
+  wifi_ap_udp_config_t wifi_cfg = {
+      .ssid = "DRONE_AP",
+      .pass = "drone1234",
+      .udp_port = 3333,
+  };
+  ESP_ERROR_CHECK(wifi_ap_udp_start(&wifi_cfg, udp_rx_cb, NULL));
 
   for (int i = 0; i < gyro_recent_values_count; i++) {
     gyro_recent_values[i] = 0;
@@ -217,11 +258,36 @@ void app_main() {
     // BLDC_set_throttle(&drone.motorTop, throttle);
     vTaskDelay(10 / portTICK_PERIOD_MS);
     msSinceTakeOff += 10;
-    if (msSinceTakeOff >= 500) {
-      average_throttle = 0.6;
+
+    if(s_last_rc_pkt.buttons & (1 << CENTER_BUTTON_BIT)) {
+      ESP_LOGI(TAG, "Center button pressed, stopping the drone");
+      BLDC_set_throttle(&drone.motorTop, 0);
+      BLDC_set_throttle(&drone.motorRight, 0);
+      BLDC_set_throttle(&drone.motorBottom, 0);
+      BLDC_set_throttle(&drone.motorLeft, 0);
+      return;
     }
 
-    if (msSinceTakeOff >= 700) {
+    if(s_last_rc_pkt.buttons & (1 << UP_BUTTON_BIT)) {
+      average_throttle = 0.9;
+    } else if(s_last_rc_pkt.buttons & (1 << DOWN_BUTTON_BIT)) {
+      average_throttle = 0.5;
+    } else {
+      average_throttle = 0.7;
+    }
+
+    if(s_last_rc_pkt.buttons & (1 << LEFT_BUTTON_BIT)) {
+      angularSpeed = 0.3;
+    } else if(s_last_rc_pkt.buttons & (1 << RIGHT_BUTTON_BIT)) {
+      angularSpeed = -0.3;
+    }
+    else {
+      angularSpeed = 0;
+    }
+
+
+
+    if (msSinceTakeOff >= 10000) {
       BLDC_set_throttle(&drone.motorTop, 0);
       BLDC_set_throttle(&drone.motorRight, 0);
       BLDC_set_throttle(&drone.motorBottom, 0);
@@ -264,14 +330,17 @@ void app_main() {
     //          minmax(0.4 - accY, 0.1, 1) * 0.5,
     //          minmax(0.4 + accY, 0.1, 1) * 0.5);
 
+    double tgtSpeedY = (s_last_rc_pkt.joystick_y - 128) / 255.0 * 0.2;
+    double tgtSpeedX = (s_last_rc_pkt.joystick_x - 128) / 255.0 * 0.2;
+
     BLDC_set_throttle(&drone.motorLeft,
-                      minmax(0.4 - accX, 0.1, 1) * average_throttle);
+                      minmax(0.4 - accX + angularSpeed + tgtSpeedY, 0.1, 1) * average_throttle);
     BLDC_set_throttle(&drone.motorRight,
-                      minmax(0.4 + accX, 0.1, 1) * average_throttle);
+                      minmax(0.4 + accX + angularSpeed - tgtSpeedY, 0.1, 1) * average_throttle);
 
     BLDC_set_throttle(&drone.motorTop,
-                      minmax(0.4 + accY, 0.1, 1) * average_throttle);
+                      minmax(0.4 + accY - angularSpeed + tgtSpeedX, 0.1, 1) * average_throttle);
     BLDC_set_throttle(&drone.motorBottom,
-                      minmax(0.4 - accY, 0.1, 1) * average_throttle);
+                      minmax(0.4 - accY - angularSpeed - tgtSpeedX, 0.1, 1) * average_throttle);
   }
 }
